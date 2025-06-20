@@ -10,7 +10,6 @@ import PyPDF2
 app = Flask(__name__)
 CORS(app)
 
-# Config
 app.config['UPLOAD_FOLDER'] = 'uploads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
@@ -47,18 +46,62 @@ def generate_irac():
     finally:
         os.remove(temp_path)
 
+    # Role-specific instructions
+    if role == 'student':
+        audience_instruction = """
+You are generating an IRAC summary designed to help a law student fully understand the Supreme Court decision.
+
+- Explain the Issue in detail.
+- Clearly state the Rule with relevant legal doctrines.
+- In the Application section, explain how the court reasoned through the facts and legal rules.
+- Clarify any complex legal reasoning for educational purposes.
+- Include sufficient context to teach the student why each part of IRAC fits.
+- If appropriate, briefly explain why alternative outcomes were rejected.
+- Your tone is educational but still professional.
+
+Format your response strictly as:
+
+Issue:
+Rule:
+Application:
+Conclusion:
+"""
+    elif role == 'paralegal':
+        audience_instruction = """
+You are generating an IRAC summary designed for a paralegal supporting attorneys.
+
+- Summarize the key legal holdings clearly.
+- In the Application, include how this case fits into prior similar cases or established precedent.
+- Emphasize how the ruling may apply to future cases or current litigation.
+- Highlight any significant historical context that affects how the ruling is applied.
+- Keep the summary actionable for legal drafting or research.
+- Maintain the IRAC format while focusing on how the case connects to practice and litigation strategy.
+
+Format your response strictly as:
+
+Issue:
+Rule:
+Application:
+Conclusion:
+"""
+    else:
+        audience_instruction = ""
+
     prompt = f"""
-    Analyze the following Supreme Court case and produce an IRAC summary for a {role}:
-    Case Name: {case_name}
-    Text: {text}
-    Output format: IRAC (Issue, Rule, Application, Conclusion)
-    """
+{audience_instruction}
+
+Case Name: {case_name}
+
+Here is the full text of the Supreme Court decision:
+
+{text}
+"""
 
     try:
         response = openai.ChatCompletion.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": "You are a legal analysis assistant."},
+                {"role": "system", "content": "You are a highly skilled legal assistant AI."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.2,
